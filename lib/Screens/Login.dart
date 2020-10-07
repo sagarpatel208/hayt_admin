@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hayt_admin/Common/AppServices.dart';
 import 'package:hayt_admin/Common/Constants.dart' as cnst;
@@ -17,11 +20,38 @@ class _LoginState extends State<Login> {
   TextEditingController edtUsername = new TextEditingController();
   TextEditingController edtPassword = new TextEditingController();
   ProgressDialog pr;
+  StreamSubscription iosSubscription;
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+  String fcm = "";
   @override
   void initState() {
     pr = ProgressDialog(context,
         type: ProgressDialogType.Normal, isDismissible: false);
     pr.style(message: "Please wait..");
+    _configureNotification();
+  }
+
+  _configureNotification() async {
+    if (Platform.isIOS) {
+      iosSubscription =
+          _firebaseMessaging.onIosSettingsRegistered.listen((data) async {
+        await _getFCMToken();
+      });
+      _firebaseMessaging
+          .requestNotificationPermissions(IosNotificationSettings());
+    } else {
+      await _getFCMToken();
+    }
+  }
+
+  _getFCMToken() {
+    _firebaseMessaging.getToken().then((String token) {
+      setState(() {
+        fcm = token;
+      });
+      print("fcm: ${token}");
+    });
     getLocal();
   }
 
@@ -36,6 +66,7 @@ class _LoginState extends State<Login> {
   }
 
   _login() {
+    print("fcm token: ${fcm}");
     if (edtUsername.text == "") {
       Fluttertoast.showToast(
           msg: "Please enter your username",
@@ -67,6 +98,7 @@ class _LoginState extends State<Login> {
         FormData d = FormData.fromMap({
           "username": edtUsername.text,
           "password": edtPassword.text,
+          "fcm_token": fcm
         });
         AppServices.AdminLogin(d).then((data) async {
           pr.hide();

@@ -402,32 +402,6 @@ class _ApproveShopsState extends State<ApproveShops> {
                 ),
                 GestureDetector(
                   onTap: () {
-                    Navigator.pushReplacementNamed(context, '/ApproveFeeds');
-                  },
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.class_,
-                          size: 23,
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(left: 25),
-                            child: Text(
-                              "Approve Feeds",
-                              style: TextStyle(fontSize: 15),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
                     Navigator.pushReplacementNamed(context, '/Category');
                   },
                   child: Padding(
@@ -444,6 +418,85 @@ class _ApproveShopsState extends State<ApproveShops> {
                             padding: EdgeInsets.only(left: 25),
                             child: Text(
                               "Category",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/ChatWithBuyer');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.chat_bubble,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Chat with Buyer",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/ChatWithSeller');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.chat,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Chat with Seller",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(
+                        context, '/NotificationToBuyer');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.notification_important,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Send Notification to Buyer",
                               style: TextStyle(fontSize: 15),
                             ),
                           ),
@@ -626,7 +679,8 @@ class _ApproveShopsComponentsState extends State<ApproveShopsComponents> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("${widget._approveShops["shopname"]}"),
+                      Expanded(
+                          child: Text("${widget._approveShops["shopname"]}")),
                       Text("${widget._approveShops["phone"]}"),
                     ],
                   ),

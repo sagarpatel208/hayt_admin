@@ -1,5 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:hayt_admin/Common/AppServices.dart';
 import 'package:hayt_admin/Common/Constants.dart' as cnst;
+import 'package:hayt_admin/Screens/EditCategory.dart';
+import 'package:progress_dialog/progress_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Category extends StatefulWidget {
@@ -9,6 +15,89 @@ class Category extends StatefulWidget {
 
 class _CategoryState extends State<Category> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  String name = "";
+  List _category = [];
+  bool isLoading = true;
+  @override
+  void initState() {
+    getLocal();
+    getAllCategory();
+  }
+
+  getAllCategory() async {
+    try {
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        setState(() {
+          isLoading = true;
+        });
+        AppServices.GetCategory({}).then((data) async {
+          if (data.data == "0") {
+            setState(() {
+              isLoading = false;
+              //_category = data.value;
+            });
+            List shop = data.value;
+            for (int i = 0; i < shop.length; i++) {
+              if (shop[i]["status"] != "1") {
+                _category.add(shop[i]);
+              }
+            }
+          } else {
+            setState(() {
+              isLoading = false;
+              _category.clear();
+            });
+          }
+        }, onError: (e) {
+          setState(() {
+            isLoading = false;
+            _category.clear();
+          });
+          showMsg("Something went wrong.");
+        });
+      }
+    } on SocketException catch (_) {
+      setState(() {
+        isLoading = false;
+        _category.clear();
+      });
+      showMsg("No Internet Connection.");
+    }
+  }
+
+  showMsg(String msg) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // return object of type Dialog
+        return AlertDialog(
+          title: new Text("Hayt Admin"),
+          content: new Text(msg),
+          actions: <Widget>[
+            // usually buttons at the bottom of the dialog
+            new FlatButton(
+              child: new Text(
+                "Close",
+                style: TextStyle(color: cnst.appPrimaryMaterialColor),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  getLocal() async {
+    SharedPreferences pref = await SharedPreferences.getInstance();
+    setState(() {
+      name = "${pref.getString(cnst.Session.name)}";
+    });
+  }
 
   void _openDrawer() {
     _scaffoldKey.currentState.openDrawer();
@@ -82,14 +171,7 @@ class _CategoryState extends State<Category> {
                       Padding(
                         padding: const EdgeInsets.only(top: 20),
                         child: Text(
-                          'abc def',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 3),
-                        child: Text(
-                          'thecompletesoftech@gmail.com',
+                          '${name.toUpperCase()}',
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
@@ -317,32 +399,6 @@ class _CategoryState extends State<Category> {
                 ),
                 GestureDetector(
                   onTap: () {
-                    Navigator.pushReplacementNamed(context, '/ApproveFeeds');
-                  },
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.class_,
-                          size: 23,
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(left: 25),
-                            child: Text(
-                              "Approve Feeds",
-                              style: TextStyle(fontSize: 15),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
                     Navigator.pushReplacementNamed(context, '/Category');
                   },
                   child: Container(
@@ -367,6 +423,85 @@ class _CategoryState extends State<Category> {
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/ChatWithBuyer');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.chat_bubble,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Chat with Buyer",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/ChatWithSeller');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.chat,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Chat with Seller",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(
+                        context, '/NotificationToBuyer');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.notification_important,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Send Notification to Buyer",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -401,13 +536,20 @@ class _CategoryState extends State<Category> {
           ],
         ),
       ),
-      body: ListView.builder(
-          shrinkWrap: true,
-          physics: ClampingScrollPhysics(),
-          itemCount: 10,
-          itemBuilder: (BuildContext context, int index) {
-            return CategoryComponents(index.toString());
-          }),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : _category.length > 0
+              ? ListView.builder(
+                  shrinkWrap: true,
+                  physics: ClampingScrollPhysics(),
+                  itemCount: _category.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    return CategoryComponents(_category[index]);
+                  })
+              : Center(
+                  child: Text("No Category available",
+                      style: TextStyle(fontSize: 20, color: Colors.black54)),
+                ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(5),
         child: MaterialButton(
@@ -434,6 +576,70 @@ class CategoryComponents extends StatefulWidget {
 }
 
 class _CategoryComponentsState extends State<CategoryComponents> {
+  ProgressDialog pr;
+  @override
+  void initState() {
+    pr = ProgressDialog(context,
+        type: ProgressDialogType.Normal, isDismissible: false);
+    pr.style(message: "Please wait..");
+  }
+
+  _deleteCategory() async {
+    try {
+      pr.show();
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        AppServices.DeleteCategory(widget._category["id"], {}).then(
+            (data) async {
+          pr.hide();
+          if (data.data == "0") {
+            Fluttertoast.showToast(
+                msg: "Category Deleted..",
+                textColor: cnst.appPrimaryMaterialColor[700],
+                backgroundColor: Colors.grey.shade100,
+                gravity: ToastGravity.BOTTOM,
+                toastLength: Toast.LENGTH_SHORT);
+
+            Navigator.pushReplacementNamed(context, '/Category');
+          } else {
+            showMsg("Something went wrong.");
+          }
+        }, onError: (e) {
+          pr.hide();
+          showMsg("Something went wrong.");
+        });
+      }
+    } on SocketException catch (_) {
+      pr.hide();
+      showMsg("No Internet Connection.");
+    }
+  }
+
+  showMsg(String msg) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // return object of type Dialog
+        return AlertDialog(
+          title: new Text("Hayt Admin"),
+          content: new Text(msg),
+          actions: <Widget>[
+            // usually buttons at the bottom of the dialog
+            new FlatButton(
+              child: new Text(
+                "Close",
+                style: TextStyle(color: cnst.appPrimaryMaterialColor),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -441,23 +647,48 @@ class _CategoryComponentsState extends State<CategoryComponents> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.asset(
-              "assets/background.png",
-              height: 60,
-              width: 60,
-              fit: BoxFit.fill,
-            ),
+            widget._category["image"] == "" || widget._category["image"] == null
+                ? Image.asset(
+                    "assets/background.png",
+                    height: 60,
+                    width: 60,
+                    fit: BoxFit.cover,
+                  )
+                : Image.network(
+                    widget._category["image"],
+                    height: 60,
+                    width: 60,
+                    fit: BoxFit.fill,
+                  ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(left: 10, right: 10),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Sagar"),
-                    IconButton(
-                      icon: Icon(Icons.delete,
-                          color: cnst.appPrimaryMaterialColor),
-                      onPressed: () {},
+                    Text("${widget._category["name"]}"),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit,
+                              color: cnst.appPrimaryMaterialColor),
+                          onPressed: () {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => EditCategory(
+                                          widget._category,
+                                        )));
+                          },
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete,
+                              color: cnst.appPrimaryMaterialColor),
+                          onPressed: () {
+                            _deleteCategory();
+                          },
+                        ),
+                      ],
                     )
                   ],
                 ),

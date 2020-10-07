@@ -401,32 +401,6 @@ class _ServicesState extends State<Services> {
                 ),
                 GestureDetector(
                   onTap: () {
-                    Navigator.pushReplacementNamed(context, '/ApproveFeeds');
-                  },
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.class_,
-                          size: 23,
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(left: 25),
-                            child: Text(
-                              "Approve Feeds",
-                              style: TextStyle(fontSize: 15),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
                     Navigator.pushReplacementNamed(context, '/Category');
                   },
                   child: Padding(
@@ -443,6 +417,85 @@ class _ServicesState extends State<Services> {
                             padding: EdgeInsets.only(left: 25),
                             child: Text(
                               "Category",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/ChatWithBuyer');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.chat_bubble,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Chat with Buyer",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/ChatWithSeller');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.chat,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Chat with Seller",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(
+                        context, '/NotificationToBuyer');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.notification_important,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Send Notification to Buyer",
                               style: TextStyle(fontSize: 15),
                             ),
                           ),
@@ -516,6 +569,37 @@ class _ServicesComponentsState extends State<ServicesComponents> {
     pr.style(message: "Please wait..");
   }
 
+  _makeVIPService() async {
+    try {
+      pr.show();
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        FormData data = FormData.fromMap({"vipstatus": "1"});
+        AppServices.MakeVIPService(widget._service["id"], data).then(
+            (data) async {
+          pr.hide();
+          if (data.data == "0") {
+            Fluttertoast.showToast(
+                msg: "Service is VIP",
+                textColor: cnst.appPrimaryMaterialColor[700],
+                backgroundColor: Colors.grey.shade100,
+                gravity: ToastGravity.BOTTOM,
+                toastLength: Toast.LENGTH_SHORT);
+          } else {
+            showMsg("Something went wrong.");
+          }
+        }, onError: (e) {
+          pr.hide();
+          showMsg("Something went wrong.");
+        });
+      }
+    } on SocketException catch (_) {
+      pr.hide();
+      showMsg("No Internet Connection.");
+    }
+    _activateService();
+  }
+
   _activateService() async {
     try {
       pr.show();
@@ -578,7 +662,11 @@ class _ServicesComponentsState extends State<ServicesComponents> {
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Column(
         children: [
-          widget._service["picture"] == "" || widget._service["picture"] == null
+          widget._service["picture"] == null ||
+                  widget._service["picture"] == "" ||
+                  widget._service["picture"].length == 0 ||
+                  widget._service["picture"]["images"].length == 0 ||
+                  widget._service["picture"]["images"] == null
               ? Image.asset(
                   "assets/background.png",
                   height: 160,
@@ -587,7 +675,7 @@ class _ServicesComponentsState extends State<ServicesComponents> {
                 )
               : FadeInImage.assetNetwork(
                   placeholder: "assets/background.png",
-                  image: widget._service["picture"],
+                  image: widget._service["picture"]["images"][0],
                   height: 160,
                   width: MediaQuery.of(context).size.width,
                   fit: BoxFit.fill,
@@ -623,9 +711,25 @@ class _ServicesComponentsState extends State<ServicesComponents> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("${widget._service["description"]}"),
+                      Expanded(
+                          child: Text("${widget._service["description"]}")),
                       Text("${widget._service["placeofservice"]}"),
                     ],
+                  ),
+                  SizedBox(height: 10),
+                  MaterialButton(
+                    elevation: 5.0,
+                    height: 40,
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 20, right: 20),
+                      child: new Text('Make VIP',
+                          style: new TextStyle(
+                              fontSize: 16.0, color: Colors.black)),
+                    ),
+                    onPressed: () {
+                      _makeVIPService();
+                    },
                   ),
                 ],
               ),

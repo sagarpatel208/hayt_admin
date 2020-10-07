@@ -2,68 +2,65 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hayt_admin/Common/AppServices.dart';
 import 'package:hayt_admin/Common/Constants.dart' as cnst;
-import 'package:progress_dialog/progress_dialog.dart';
+import 'package:hayt_admin/Screens/ConversationWithBuyer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class ApproveFeeds extends StatefulWidget {
+class ChatWithBuyer extends StatefulWidget {
   @override
-  _ApproveFeedsState createState() => _ApproveFeedsState();
+  _ChatWithBuyerState createState() => _ChatWithBuyerState();
 }
 
-class _ApproveFeedsState extends State<ApproveFeeds> {
+class _ChatWithBuyerState extends State<ChatWithBuyer> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  String name = "";
-  List _feeds = [];
+  String adminId = "", name = "";
+  List _chatlist = [];
   bool isLoading = true;
   @override
   void initState() {
     getLocal();
-    getAllFeeds();
+    _getBuyertoAdminChat();
   }
 
-  getAllFeeds() async {
+  _getBuyertoAdminChat() async {
     try {
+      setState(() {
+        isLoading = true;
+      });
       final result = await InternetAddress.lookup('google.com');
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        setState(() {
-          isLoading = true;
-        });
+        //pr.show();
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String id = prefs.getString(cnst.Session.id);
-        AppServices.GetAllFeeds(id, {}).then((data) async {
+        FormData data = FormData.fromMap({"adminid": id});
+        print("iiii: ${id}");
+        AppServices.GetUsersToAdminChatList(data).then((data) async {
+          setState(() {
+            isLoading = false;
+          });
           if (data.data == "0") {
             setState(() {
-              isLoading = false;
-              //_feeds = data.value;
+              _chatlist = data.value;
             });
-            List shop = data.value;
-            for (int i = 0; i < shop.length; i++) {
-              if (shop[i]["status"] == "1") {
-                _feeds.add(shop[i]);
-              }
-            }
           } else {
             setState(() {
               isLoading = false;
-              _feeds.clear();
             });
           }
         }, onError: (e) {
           setState(() {
             isLoading = false;
-            _feeds.clear();
           });
+
           showMsg("Something went wrong.");
         });
       }
     } on SocketException catch (_) {
       setState(() {
         isLoading = false;
-        _feeds.clear();
       });
+
       showMsg("No Internet Connection.");
     }
   }
@@ -97,15 +94,12 @@ class _ApproveFeedsState extends State<ApproveFeeds> {
     SharedPreferences pref = await SharedPreferences.getInstance();
     setState(() {
       name = "${pref.getString(cnst.Session.name)}";
+      adminId = pref.getString(cnst.Session.id);
     });
   }
 
   void _openDrawer() {
     _scaffoldKey.currentState.openDrawer();
-  }
-
-  void _closeDrawer() {
-    Navigator.of(context).pop();
   }
 
   _logout() async {
@@ -120,7 +114,7 @@ class _ApproveFeedsState extends State<ApproveFeeds> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text("Approve Feeds"),
+        title: Text("Chat with Buyer"),
         leading: IconButton(
           icon: Icon(
             Icons.menu,
@@ -400,35 +394,6 @@ class _ApproveFeedsState extends State<ApproveFeeds> {
                 ),
                 GestureDetector(
                   onTap: () {
-                    Navigator.pushReplacementNamed(context, '/ApproveFeeds');
-                  },
-                  child: Container(
-                    color: cnst.appPrimaryMaterialColor[200],
-                    child: Padding(
-                      padding:
-                          const EdgeInsets.only(left: 10, top: 10, bottom: 10),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.class_,
-                            size: 23,
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(left: 25),
-                              child: Text(
-                                "Approve Feeds",
-                                style: TextStyle(fontSize: 15),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
                     Navigator.pushReplacementNamed(context, '/Category');
                   },
                   child: Padding(
@@ -457,25 +422,28 @@ class _ApproveFeedsState extends State<ApproveFeeds> {
                   onTap: () {
                     Navigator.pushReplacementNamed(context, '/ChatWithBuyer');
                   },
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.chat_bubble,
-                          size: 23,
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(left: 25),
-                            child: Text(
-                              "Chat with Buyer",
-                              style: TextStyle(fontSize: 15),
+                  child: Container(
+                    color: cnst.appPrimaryMaterialColor[200],
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.chat_bubble,
+                            size: 23,
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 25),
+                              child: Text(
+                                "Chat with Buyer",
+                                style: TextStyle(fontSize: 15),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -565,156 +533,68 @@ class _ApproveFeedsState extends State<ApproveFeeds> {
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
-          : _feeds.length > 0
+          : _chatlist.length > 0
               ? ListView.builder(
                   shrinkWrap: true,
                   physics: ClampingScrollPhysics(),
-                  itemCount: _feeds.length,
+                  itemCount: _chatlist.length,
                   itemBuilder: (BuildContext context, int index) {
-                    return ApproveFeedsComponents(_feeds[index]);
+                    return UserChatListComponents(adminId, _chatlist[index]);
                   })
               : Center(
-                  child: Text("No feeds available",
-                      style: TextStyle(fontSize: 20, color: Colors.black54)),
-                ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: Icon(Icons.mail),
-        backgroundColor: cnst.appPrimaryMaterialColor,
-      ),
+                  child: Text(
+                  "No Chats available",
+                  style: TextStyle(fontSize: 18, color: Colors.black54),
+                )),
     );
   }
 }
 
-class ApproveFeedsComponents extends StatefulWidget {
-  var _approveFeeds;
-  ApproveFeedsComponents(this._approveFeeds);
+class UserChatListComponents extends StatefulWidget {
+  String _adminId;
+  var _buyer;
+  UserChatListComponents(this._adminId, this._buyer);
   @override
-  _ApproveFeedsComponentsState createState() => _ApproveFeedsComponentsState();
+  _UserChatListComponentsState createState() => _UserChatListComponentsState();
 }
 
-class _ApproveFeedsComponentsState extends State<ApproveFeedsComponents> {
-  ProgressDialog pr;
-  @override
-  void initState() {
-    pr = ProgressDialog(context,
-        type: ProgressDialogType.Normal, isDismissible: false);
-    pr.style(message: "Please wait..");
-  }
-
-  _declinedFeed() async {
-    try {
-      pr.show();
-      final result = await InternetAddress.lookup('google.com');
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        FormData data = FormData.fromMap({"status": "0"});
-        AppServices.UpdateFeedStatus(widget._approveFeeds["id"], data).then(
-            (data) async {
-          pr.hide();
-          if (data.data == "0") {
-            Fluttertoast.showToast(
-                msg: "Feeds declined successfully",
-                textColor: cnst.appPrimaryMaterialColor[700],
-                backgroundColor: Colors.grey.shade100,
-                gravity: ToastGravity.BOTTOM,
-                toastLength: Toast.LENGTH_SHORT);
-            Navigator.pushReplacementNamed(context, '/ApproveFeeds');
-          } else {
-            showMsg("Something went wrong.");
-          }
-        }, onError: (e) {
-          pr.hide();
-          showMsg("Something went wrong.");
-        });
-      }
-    } on SocketException catch (_) {
-      pr.hide();
-      showMsg("No Internet Connection.");
-    }
-  }
-
-  showMsg(String msg) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // return object of type Dialog
-        return AlertDialog(
-          title: new Text("Hayt Admin"),
-          content: new Text(msg),
-          actions: <Widget>[
-            // usually buttons at the bottom of the dialog
-            new FlatButton(
-              child: new Text(
-                "Close",
-                style: TextStyle(color: cnst.appPrimaryMaterialColor),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
+class _UserChatListComponentsState extends State<UserChatListComponents> {
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Column(
-        children: [
-          widget._approveFeeds["image"] == "" ||
-                  widget._approveFeeds["image"] == null
-              ? Image.asset(
-                  "assets/background.png",
-                  height: 160,
-                  width: MediaQuery.of(context).size.width,
-                  fit: BoxFit.cover,
-                )
-              : FadeInImage.assetNetwork(
-                  placeholder: "assets/background.png",
-                  image: widget._approveFeeds["image"],
-                  height: 160,
-                  width: MediaQuery.of(context).size.width,
-                  fit: BoxFit.fill,
-                ),
-          Container(
-            width: MediaQuery.of(context).size.width,
-            color: Colors.grey.shade300,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("${widget._approveFeeds["name"]}"),
-                      MaterialButton(
-                        elevation: 5.0,
-                        height: 40,
-                        color: Colors.white,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 20, right: 20),
-                          child: new Text('DECLINE',
-                              style: new TextStyle(
-                                  fontSize: 16.0, color: Colors.black)),
-                        ),
-                        onPressed: () {
-                          _declinedFeed();
-                        },
+    return GestureDetector(
+        onTap: () {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => ConversationWithBuyer(
+                        widget._adminId,
+                        widget._buyer["id"].toString(),
+                      )));
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              widget._buyer['logo'] == null || widget._buyer['logo'] == ""
+                  ? ClipOval(
+                      child: Image.asset("assets/user.png",
+                          height: 65, width: 65, fit: BoxFit.cover),
+                    )
+                  : ClipOval(
+                      child: Image.network(
+                        widget._buyer['logo'],
+                        height: 65,
+                        width: 65,
+                        fit: BoxFit.fill,
                       ),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                  Text("${widget._approveFeeds["description"]}"),
-                ],
+                    ),
+              Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: Text(
+                    "${widget._buyer["name"]} ${widget._buyer["surname"]}"),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    );
+        ));
   }
 }

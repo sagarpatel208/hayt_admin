@@ -1,0 +1,98 @@
+{
+  "project_info": {
+    "project_number": "50120981974",
+    "firebase_url": "https://hayt-app-fa2a7.firebaseio.com",
+    "project_id": "hayt-app-fa2a7",
+    "storage_bucket": "hayt-app-fa2a7.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:50120981974:android:eef8c4b93fcfb11f9a3877",
+        "android_client_info": {
+          "package_name": "com.hayt_admin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "50120981974-7f2kjot3vuqak0j7qu6ndcennjp7gmg0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnRsiP7yUxTbtzBHYDLlIzB0kLgE9t9rY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "50120981974-7f2kjot3vuqak0j7qu6ndcennjp7gmg0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:50120981974:android:32ab919b7c79c8839a3877",
+        "android_client_info": {
+          "package_name": "com.hayt_buyer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "50120981974-7f2kjot3vuqak0j7qu6ndcennjp7gmg0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnRsiP7yUxTbtzBHYDLlIzB0kLgE9t9rY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "50120981974-7f2kjot3vuqak0j7qu6ndcennjp7gmg0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:50120981974:android:2430bb62bfce42619a3877",
+        "android_client_info": {
+          "package_name": "com.hayt_seller"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "50120981974-7f2kjot3vuqak0j7qu6ndcennjp7gmg0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnRsiP7yUxTbtzBHYDLlIzB0kLgE9t9rY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "50120981974-7f2kjot3vuqak0j7qu6ndcennjp7gmg0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

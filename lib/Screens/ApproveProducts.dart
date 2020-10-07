@@ -18,6 +18,7 @@ class _ApproveProductsState extends State<ApproveProducts> {
   String name = "";
   List _products = [];
   bool isLoading = true;
+
   @override
   void initState() {
     getLocal();
@@ -401,32 +402,6 @@ class _ApproveProductsState extends State<ApproveProducts> {
                 ),
                 GestureDetector(
                   onTap: () {
-                    Navigator.pushReplacementNamed(context, '/ApproveFeeds');
-                  },
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.class_,
-                          size: 23,
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(left: 25),
-                            child: Text(
-                              "Approve Feeds",
-                              style: TextStyle(fontSize: 15),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
                     Navigator.pushReplacementNamed(context, '/Category');
                   },
                   child: Padding(
@@ -443,6 +418,85 @@ class _ApproveProductsState extends State<ApproveProducts> {
                             padding: EdgeInsets.only(left: 25),
                             child: Text(
                               "Category",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/ChatWithBuyer');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.chat_bubble,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Chat with Buyer",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/ChatWithSeller');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.chat,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Chat with Seller",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(
+                        context, '/NotificationToBuyer');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.notification_important,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Send Notification to Buyer",
                               style: TextStyle(fontSize: 15),
                             ),
                           ),
@@ -502,7 +556,9 @@ class _ApproveProductsState extends State<ApproveProducts> {
 
 class ApproveProductComponents extends StatefulWidget {
   var _approveProduct;
+
   ApproveProductComponents(this._approveProduct);
+
   @override
   _ApproveProductComponentsState createState() =>
       _ApproveProductComponentsState();
@@ -510,11 +566,42 @@ class ApproveProductComponents extends StatefulWidget {
 
 class _ApproveProductComponentsState extends State<ApproveProductComponents> {
   ProgressDialog pr;
+
   @override
   void initState() {
     pr = ProgressDialog(context,
         type: ProgressDialogType.Normal, isDismissible: false);
     pr.style(message: "Please wait..");
+  }
+
+  _removeVIPProduct() async {
+    try {
+      pr.show();
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        FormData data = FormData.fromMap({"vipstatus": "0"});
+        AppServices.MakeVIPProduct(widget._approveProduct["id"], data).then(
+            (data) async {
+          pr.hide();
+          if (data.data == "0") {
+            Fluttertoast.showToast(
+                msg: "Product is no more VIP",
+                textColor: cnst.appPrimaryMaterialColor[700],
+                backgroundColor: Colors.grey.shade100,
+                gravity: ToastGravity.BOTTOM,
+                toastLength: Toast.LENGTH_SHORT);
+          } else {
+            showMsg("Something went wrong.");
+          }
+        }, onError: (e) {
+          pr.hide();
+          showMsg("Something went wrong.");
+        });
+      }
+    } on SocketException catch (_) {
+      pr.hide();
+      showMsg("No Internet Connection.");
+    }
   }
 
   _declinedProduct() async {
@@ -546,6 +633,7 @@ class _ApproveProductComponentsState extends State<ApproveProductComponents> {
       pr.hide();
       showMsg("No Internet Connection.");
     }
+    _removeVIPProduct();
   }
 
   showMsg(String msg) {
@@ -579,8 +667,11 @@ class _ApproveProductComponentsState extends State<ApproveProductComponents> {
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Column(
         children: [
-          widget._approveProduct["picture"] == "" ||
-                  widget._approveProduct["picture"] == null
+          widget._approveProduct["picture"] == null ||
+                  widget._approveProduct["picture"] == "" ||
+                  widget._approveProduct["picture"].length == 0 ||
+                  widget._approveProduct["picture"]["images"].length == 0 ||
+                  widget._approveProduct["picture"]["images"] == null
               ? Image.asset(
                   "assets/background.png",
                   height: 160,
@@ -589,7 +680,7 @@ class _ApproveProductComponentsState extends State<ApproveProductComponents> {
                 )
               : FadeInImage.assetNetwork(
                   placeholder: "assets/background.png",
-                  image: widget._approveProduct["picture"],
+                  image: widget._approveProduct["picture"]["images"][0],
                   height: 160,
                   width: MediaQuery.of(context).size.width,
                   fit: BoxFit.fill,
@@ -625,7 +716,9 @@ class _ApproveProductComponentsState extends State<ApproveProductComponents> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("${widget._approveProduct["description"]}"),
+                      Expanded(
+                          child:
+                              Text("${widget._approveProduct["description"]}")),
                       Text("${widget._approveProduct["placeofproduct"]}"),
                     ],
                   ),

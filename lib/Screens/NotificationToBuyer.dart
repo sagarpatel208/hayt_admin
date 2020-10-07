@@ -1,21 +1,69 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hayt_admin/Common/AppServices.dart';
 import 'package:hayt_admin/Common/Constants.dart' as cnst;
+import 'package:progress_dialog/progress_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class VIP extends StatefulWidget {
+class NotificationToBuyer extends StatefulWidget {
   @override
-  _VIPState createState() => _VIPState();
+  _NotificationToBuyerState createState() => _NotificationToBuyerState();
 }
 
-class _VIPState extends State<VIP> {
+class _NotificationToBuyerState extends State<NotificationToBuyer> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  TextEditingController edtName = new TextEditingController();
+
+  TextEditingController edtDescription = new TextEditingController();
   String name = "";
+  String Title;
+  String bodymessage;
+  ProgressDialog pr;
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
   @override
   void initState() {
+    pr = ProgressDialog(context,
+        type: ProgressDialogType.Normal, isDismissible: false);
+    pr.style(message: "Please wait..");
     getLocal();
+    _firebaseMessaging.configure(
+      onMessage: (Map<String, dynamic> message) async {
+        print("onMessage: $message");
+        Title = message["notification"]["title"];
+        bodymessage = message["notification"]["body"];
+        //Get.to(OverlayScreen(message))
+        print("onMessage  $message");
+        showNotification('$Title', '$bodymessage');
+      },
+      onLaunch: (Map<String, dynamic> message) async {
+        print("onLaunch: $message");
+      },
+      onResume: (Map<String, dynamic> message) async {
+        print("onResume: $message");
+      },
+    );
+
+    flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
+    var android = new AndroidInitializationSettings('@mipmap/ic_launcher');
+    var iOS = new IOSInitializationSettings();
+    var initSetttings = new InitializationSettings(android, iOS);
+    flutterLocalNotificationsPlugin.initialize(initSetttings);
+    print("1");
+  }
+
+  showNotification(String title, String body) async {
+    var android = new AndroidNotificationDetails('com.hayt_admin',
+        'Hayt Admin Notification', 'Hayt Notification Description',
+        priority: Priority.High, importance: Importance.Max, playSound: true);
+    var iOS = new IOSNotificationDetails();
+    var platform = new NotificationDetails(android, iOS);
+    await flutterLocalNotificationsPlugin.show(0, '$title', '$body', platform);
   }
 
   getLocal() async {
@@ -40,14 +88,71 @@ class _VIPState extends State<VIP> {
         .pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
   }
 
+  _sendNotification() async {
+    try {
+      pr.show();
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        //pr.show();
+
+        FormData d = FormData.fromMap(
+            {"title": edtName.text, "description": edtDescription.text});
+
+        AppServices.SendNotificationToBuyer(d).then((data) async {
+          pr.hide();
+          if (data.data == "0") {
+            Fluttertoast.showToast(
+                msg: data.message,
+                textColor: cnst.appPrimaryMaterialColor[700],
+                backgroundColor: Colors.grey.shade100,
+                gravity: ToastGravity.BOTTOM,
+                toastLength: Toast.LENGTH_SHORT);
+            Navigator.pushReplacementNamed(context, '/NotificationToBuyer');
+          } else {
+            showMsg("Something went wrong.");
+          }
+        }, onError: (e) {
+          pr.hide();
+          showMsg("Something went wrong.");
+        });
+      }
+    } on SocketException catch (_) {
+      pr.hide();
+      showMsg("No Internet Connection.");
+    }
+  }
+
+  showMsg(String msg) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // return object of type Dialog
+        return AlertDialog(
+          title: new Text("Hayt Admin"),
+          content: new Text(msg),
+          actions: <Widget>[
+            // usually buttons at the bottom of the dialog
+            new FlatButton(
+              child: new Text(
+                "Close",
+                style: TextStyle(color: cnst.appPrimaryMaterialColor),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
+    return Scaffold(
         key: _scaffoldKey,
         appBar: AppBar(
-          title: Text("VIP"),
+          title: Text("Notification to Buyer"),
           leading: IconButton(
             icon: Icon(
               Icons.menu,
@@ -224,28 +329,25 @@ class _VIPState extends State<VIP> {
                     onTap: () {
                       Navigator.pushReplacementNamed(context, '/VIP');
                     },
-                    child: Container(
-                      color: cnst.appPrimaryMaterialColor[200],
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                            left: 10, top: 10, bottom: 10),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.verified_user,
-                              size: 23,
-                            ),
-                            Expanded(
-                              child: Padding(
-                                padding: EdgeInsets.only(left: 25),
-                                child: Text(
-                                  "VIP",
-                                  style: TextStyle(fontSize: 15),
-                                ),
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.verified_user,
+                            size: 23,
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 25),
+                              child: Text(
+                                "VIP",
+                                style: TextStyle(fontSize: 15),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -414,25 +516,28 @@ class _VIPState extends State<VIP> {
                       Navigator.pushReplacementNamed(
                           context, '/NotificationToBuyer');
                     },
-                    child: Padding(
-                      padding:
-                          const EdgeInsets.only(left: 10, top: 10, bottom: 10),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.notification_important,
-                            size: 23,
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(left: 25),
-                              child: Text(
-                                "Send Notification to Buyer",
-                                style: TextStyle(fontSize: 15),
+                    child: Container(
+                      color: cnst.appPrimaryMaterialColor[200],
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                            left: 10, top: 10, bottom: 10),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.notification_important,
+                              size: 23,
+                            ),
+                            Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.only(left: 25),
+                                child: Text(
+                                  "Send Notification to Buyer",
+                                  style: TextStyle(fontSize: 15),
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -467,340 +572,131 @@ class _VIPState extends State<VIP> {
             ],
           ),
         ),
-        body: Column(
-          children: [
-            TabBar(
-              indicatorColor: cnst.appPrimaryMaterialColor,
-              labelColor: cnst.appPrimaryMaterialColor,
-              labelStyle: TextStyle(fontWeight: FontWeight.bold),
-              unselectedLabelColor: Colors.black45,
-              tabs: [
-                Tab(text: "VIP Services"),
-                Tab(text: "VIP Products"),
+        body: Padding(
+          padding: const EdgeInsets.only(left: 20, right: 20),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                SizedBox(height: 20),
+                Container(
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.grey.shade300, width: 2),
+                      borderRadius: BorderRadius.circular(10)),
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text("Title"),
+                        ),
+                        TextFormField(
+                          textAlign: TextAlign.start,
+                          keyboardType: TextInputType.text,
+                          scrollPadding: EdgeInsets.all(0),
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 18.0,
+                          ),
+                          cursorColor: cnst.appPrimaryMaterialColor,
+                          controller: edtName,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) {
+                            FocusScope.of(context).unfocus();
+                          },
+                          decoration: InputDecoration(
+                            hintText: "Title",
+                            floatingLabelBehavior: FloatingLabelBehavior.never,
+                            border: InputBorder.none,
+                            hintStyle: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20),
+                Container(
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.grey.shade300, width: 2),
+                      borderRadius: BorderRadius.circular(10)),
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text("Description"),
+                        ),
+                        TextFormField(
+                          textAlign: TextAlign.start,
+                          keyboardType: TextInputType.text,
+                          scrollPadding: EdgeInsets.all(0),
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 18.0,
+                          ),
+                          cursorColor: cnst.appPrimaryMaterialColor,
+                          controller: edtDescription,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) {
+                            FocusScope.of(context).unfocus();
+                          },
+                          decoration: InputDecoration(
+                            hintText: "Description",
+                            floatingLabelBehavior: FloatingLabelBehavior.never,
+                            border: InputBorder.none,
+                            hintStyle: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20),
+                MaterialButton(
+                  elevation: 5.0,
+                  height: 50,
+                  minWidth: MediaQuery.of(context).size.width,
+                  color: cnst.appPrimaryMaterialColor,
+                  child: new Text('SEND NOTIFICATION',
+                      style:
+                          new TextStyle(fontSize: 16.0, color: Colors.white)),
+                  onPressed: () {
+                    if (edtName.text == "") {
+                      Fluttertoast.showToast(
+                          msg: "Please enter Notification Title",
+                          textColor: Colors.white,
+                          backgroundColor: cnst.appPrimaryMaterialColor,
+                          gravity: ToastGravity.BOTTOM,
+                          toastLength: Toast.LENGTH_SHORT);
+                    } else if (edtDescription.text == null) {
+                      Fluttertoast.showToast(
+                          msg: "Please enter Notification Description",
+                          textColor: Colors.white,
+                          backgroundColor: cnst.appPrimaryMaterialColor,
+                          gravity: ToastGravity.BOTTOM,
+                          toastLength: Toast.LENGTH_SHORT);
+                    } else {
+                      _sendNotification();
+                    }
+                    //  showNotification("Sagar", "Patel");
+                  },
+                ),
+                SizedBox(height: 20),
               ],
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 10, right: 10, top: 10),
-                child: TabBarView(
-                  children: [
-                    VIPService(),
-                    VIPProducts(),
-                  ],
-                ),
-              ),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class VIPService extends StatefulWidget {
-  @override
-  _VIPServiceState createState() => _VIPServiceState();
-}
-
-class _VIPServiceState extends State<VIPService> {
-  bool isLoading = true;
-  List _vipServices = [];
-
-  @override
-  void initState() {
-    getVIPServices();
-  }
-
-  getVIPServices() async {
-    try {
-      final result = await InternetAddress.lookup('google.com');
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        setState(() {
-          isLoading = true;
-        });
-        AppServices.GetAllServices({}).then((data) async {
-          if (data.data == "0") {
-            setState(() {
-              isLoading = false;
-            });
-            List service = data.value;
-            for (int i = 0; i < service.length; i++) {
-              if (service[i]["vipstatus"] == "1") {
-                _vipServices.add(service[i]);
-              }
-            }
-          } else {
-            setState(() {
-              isLoading = false;
-              _vipServices.clear();
-            });
-          }
-        }, onError: (e) {
-          setState(() {
-            isLoading = false;
-            _vipServices.clear();
-          });
-          showMsg("Something went wrong.");
-        });
-      }
-    } on SocketException catch (_) {
-      setState(() {
-        isLoading = false;
-        _vipServices.clear();
-      });
-      showMsg("No Internet Connection.");
-    }
-  }
-
-  showMsg(String msg) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // return object of type Dialog
-        return AlertDialog(
-          title: new Text("Hayt Admin"),
-          content: new Text(msg),
-          actions: <Widget>[
-            // usually buttons at the bottom of the dialog
-            new FlatButton(
-              child: new Text(
-                "Close",
-                style: TextStyle(color: cnst.appPrimaryMaterialColor),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return isLoading
-        ? Center(child: CircularProgressIndicator())
-        : _vipServices.length > 0
-            ? ListView.builder(
-                shrinkWrap: true,
-                physics: ClampingScrollPhysics(),
-                itemCount: _vipServices.length,
-                itemBuilder: (BuildContext context, int index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Column(
-                      children: [
-                        _vipServices[index]["picture"] == "" ||
-                                _vipServices[index]["picture"] == null ||
-                                _vipServices[index]["picture"].length == 0
-                            ? Image.asset(
-                                "assets/background.png",
-                                height: 160,
-                                width: MediaQuery.of(context).size.width,
-                                fit: BoxFit.cover,
-                              )
-                            : FadeInImage.assetNetwork(
-                                placeholder: "assets/background.png",
-                                image: _vipServices[index]["picture"]["images"]
-                                    [0],
-                                height: 160,
-                                width: MediaQuery.of(context).size.width,
-                                fit: BoxFit.fill,
-                              ),
-                        Container(
-                          width: MediaQuery.of(context).size.width,
-                          color: Colors.grey.shade300,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 10, horizontal: 20),
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text("${_vipServices[index]["name"]}"),
-                                  ],
-                                ),
-                                SizedBox(height: 10),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                          "${_vipServices[index]["description"]}"),
-                                    ),
-                                    Text(
-                                        "${_vipServices[index]["placeofservice"]}"),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                })
-            : Center(
-                child: Text("No VIP Services",
-                    style: TextStyle(fontSize: 20, color: Colors.black54)),
-              );
-  }
-}
-
-class VIPProducts extends StatefulWidget {
-  @override
-  _VIPProductsState createState() => _VIPProductsState();
-}
-
-class _VIPProductsState extends State<VIPProducts> {
-  bool isLoading = true;
-  List _vipProducts = [];
-
-  @override
-  void initState() {
-    getVIPProducts();
-  }
-
-  getVIPProducts() async {
-    try {
-      final result = await InternetAddress.lookup('google.com');
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        setState(() {
-          isLoading = true;
-        });
-        AppServices.GetAllProducts({}).then((data) async {
-          if (data.data == "0") {
-            setState(() {
-              isLoading = false;
-            });
-            List service = data.value;
-            for (int i = 0; i < service.length; i++) {
-              if (service[i]["vipstatus"] == "1") {
-                _vipProducts.add(service[i]);
-              }
-            }
-          } else {
-            setState(() {
-              isLoading = false;
-              _vipProducts.clear();
-            });
-          }
-        }, onError: (e) {
-          setState(() {
-            isLoading = false;
-            _vipProducts.clear();
-          });
-          showMsg("Something went wrong.");
-        });
-      }
-    } on SocketException catch (_) {
-      setState(() {
-        isLoading = false;
-        _vipProducts.clear();
-      });
-      showMsg("No Internet Connection.");
-    }
-  }
-
-  showMsg(String msg) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // return object of type Dialog
-        return AlertDialog(
-          title: new Text("Hayt Admin"),
-          content: new Text(msg),
-          actions: <Widget>[
-            // usually buttons at the bottom of the dialog
-            new FlatButton(
-              child: new Text(
-                "Close",
-                style: TextStyle(color: cnst.appPrimaryMaterialColor),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return isLoading
-        ? Center(child: CircularProgressIndicator())
-        : _vipProducts.length > 0
-            ? ListView.builder(
-                shrinkWrap: true,
-                physics: ClampingScrollPhysics(),
-                itemCount: _vipProducts.length,
-                itemBuilder: (BuildContext context, int index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Column(
-                      children: [
-                        _vipProducts[index]["picture"] == "" ||
-                                _vipProducts[index]["picture"] == null ||
-                                _vipProducts[index]["picture"].length == 0
-                            ? Image.asset(
-                                "assets/background.png",
-                                height: 160,
-                                width: MediaQuery.of(context).size.width,
-                                fit: BoxFit.cover,
-                              )
-                            : FadeInImage.assetNetwork(
-                                placeholder: "assets/background.png",
-                                image: _vipProducts[index]["picture"]["images"]
-                                    [0],
-                                height: 160,
-                                width: MediaQuery.of(context).size.width,
-                                fit: BoxFit.fill,
-                              ),
-                        Container(
-                          width: MediaQuery.of(context).size.width,
-                          color: Colors.grey.shade300,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 10, horizontal: 20),
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text("${_vipProducts[index]["name"]}"),
-                                  ],
-                                ),
-                                SizedBox(height: 10),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                          "${_vipProducts[index]["description"]}"),
-                                    ),
-                                    Text(
-                                        "${_vipProducts[index]["placeofproduct"]}"),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                })
-            : Center(
-                child: Text("No VIP Products",
-                    style: TextStyle(fontSize: 20, color: Colors.black54)),
-              );
+          ),
+        ));
   }
 }

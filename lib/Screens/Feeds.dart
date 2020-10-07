@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hayt_admin/Common/AppServices.dart';
 import 'package:hayt_admin/Common/Constants.dart' as cnst;
+import 'package:hayt_admin/Screens/FeedsComments.dart';
 import 'package:progress_dialog/progress_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,7 +17,7 @@ class Feeds extends StatefulWidget {
 class _FeedsState extends State<Feeds> {
   DateTime currentBackPressTime;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  String name = "", email = "";
+  String name = "";
   List _feeds = [];
   bool isLoading = true;
   @override
@@ -32,7 +33,9 @@ class _FeedsState extends State<Feeds> {
         setState(() {
           isLoading = true;
         });
-        AppServices.GetAllFeeds({}).then((data) async {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String id = prefs.getString(cnst.Session.id);
+        AppServices.GetAllFeeds(id, {}).then((data) async {
           if (data.data == "0") {
             setState(() {
               isLoading = false;
@@ -40,7 +43,7 @@ class _FeedsState extends State<Feeds> {
             });
             List shop = data.value;
             for (int i = 0; i < shop.length; i++) {
-              if (shop[i]["status"] != "1") {
+              if (shop[i]["status"] == "1") {
                 _feeds.add(shop[i]);
               }
             }
@@ -402,32 +405,6 @@ class _FeedsState extends State<Feeds> {
                 ),
                 GestureDetector(
                   onTap: () {
-                    Navigator.pushReplacementNamed(context, '/ApproveFeeds');
-                  },
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.class_,
-                          size: 23,
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(left: 25),
-                            child: Text(
-                              "Approve Feeds",
-                              style: TextStyle(fontSize: 15),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
                     Navigator.pushReplacementNamed(context, '/Category');
                   },
                   child: Padding(
@@ -444,6 +421,85 @@ class _FeedsState extends State<Feeds> {
                             padding: EdgeInsets.only(left: 25),
                             child: Text(
                               "Category",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/ChatWithBuyer');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.chat_bubble,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Chat with Buyer",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/ChatWithSeller');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.chat,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Chat with Seller",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(
+                        context, '/NotificationToBuyer');
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.notification_important,
+                          size: 23,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 25),
+                            child: Text(
+                              "Send Notification to Buyer",
                               style: TextStyle(fontSize: 15),
                             ),
                           ),
@@ -497,11 +553,6 @@ class _FeedsState extends State<Feeds> {
                   child: Text("No feeds available",
                       style: TextStyle(fontSize: 20, color: Colors.black54)),
                 ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: Icon(Icons.mail),
-        backgroundColor: cnst.appPrimaryMaterialColor,
-      ),
     );
   }
 }
@@ -522,18 +573,164 @@ class _FeedsComponentsState extends State<FeedsComponents> {
     pr.style(message: "Please wait..");
   }
 
-  _activateFeed() async {
+  addFollow() async {
     try {
       pr.show();
       final result = await InternetAddress.lookup('google.com');
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        FormData data = FormData.fromMap({"status": "1"});
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String id = prefs.getString(cnst.Session.id);
+        FormData data = FormData.fromMap({
+          "sellerid": widget._feeds["sellerid"],
+          "status": "0",
+          "userid": id
+        });
+        AppServices.AddFollow(data).then((data) async {
+          pr.hide();
+          if (data.data == "0") {
+            setState(() {
+              widget._feeds["isFollow"] = "1";
+            });
+            Fluttertoast.showToast(
+                msg: "Follow successfully",
+                textColor: cnst.appPrimaryMaterialColor[700],
+                backgroundColor: Colors.grey.shade100,
+                gravity: ToastGravity.BOTTOM,
+                toastLength: Toast.LENGTH_SHORT);
+          } else {
+            showMsg("Something went wrong.");
+          }
+        }, onError: (e) {
+          pr.hide();
+          showMsg("Something went wrong.");
+        });
+      }
+    } on SocketException catch (_) {
+      pr.hide();
+      showMsg("No Internet Connection.");
+    }
+  }
+
+  deleteFollow() async {
+    try {
+      pr.show();
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        FormData data = FormData.fromMap({});
+        print("id: ${widget._feeds["followid"]}");
+        AppServices.DeleteFollow(widget._feeds["followid"], data).then(
+            (data) async {
+          pr.hide();
+          if (data.data == "0") {
+            setState(() {
+              widget._feeds["isFollow"] = "0";
+            });
+            Fluttertoast.showToast(
+                msg: "Unfollow successfully",
+                textColor: cnst.appPrimaryMaterialColor[700],
+                backgroundColor: Colors.grey.shade100,
+                gravity: ToastGravity.BOTTOM,
+                toastLength: Toast.LENGTH_SHORT);
+          } else {
+            showMsg("Something went wrong.");
+          }
+        }, onError: (e) {
+          pr.hide();
+          showMsg("Something went wrong.");
+        });
+      }
+    } on SocketException catch (_) {
+      pr.hide();
+      showMsg("No Internet Connection.");
+    }
+  }
+
+  addLike() async {
+    try {
+      pr.show();
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String id = prefs.getString(cnst.Session.id);
+        FormData data =
+            FormData.fromMap({"userid": id, "feedid": widget._feeds["id"]});
+        AppServices.GiveFeedLike(data).then((data) async {
+          pr.hide();
+          if (data.data == "0") {
+            setState(() {
+              widget._feeds["isLike"] = "1";
+              widget._feeds["total_likes"] =
+                  (int.parse(widget._feeds["total_likes"]) + 1).toString();
+            });
+            Fluttertoast.showToast(
+                msg: "Like give",
+                textColor: cnst.appPrimaryMaterialColor[700],
+                backgroundColor: Colors.grey.shade100,
+                gravity: ToastGravity.BOTTOM,
+                toastLength: Toast.LENGTH_SHORT);
+          } else {
+            showMsg("Something went wrong.");
+          }
+        }, onError: (e) {
+          pr.hide();
+          showMsg("Something went wrong.");
+        });
+      }
+    } on SocketException catch (_) {
+      pr.hide();
+      showMsg("No Internet Connection.");
+    }
+  }
+
+  removeLike() async {
+    try {
+      pr.show();
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String id = prefs.getString(cnst.Session.id);
+        FormData data =
+            FormData.fromMap({"userid": id, "feedid": widget._feeds["id"]});
+        AppServices.RemoveFeedLike(data).then((data) async {
+          pr.hide();
+          if (data.data == "0") {
+            setState(() {
+              widget._feeds["isLike"] = "0";
+              widget._feeds["total_likes"] =
+                  (int.parse(widget._feeds["total_likes"]) - 1).toString();
+            });
+            Fluttertoast.showToast(
+                msg: "Like removed",
+                textColor: cnst.appPrimaryMaterialColor[700],
+                backgroundColor: Colors.grey.shade100,
+                gravity: ToastGravity.BOTTOM,
+                toastLength: Toast.LENGTH_SHORT);
+          } else {
+            showMsg("Something went wrong.");
+          }
+        }, onError: (e) {
+          pr.hide();
+          showMsg("Something went wrong.");
+        });
+      }
+    } on SocketException catch (_) {
+      pr.hide();
+      showMsg("No Internet Connection.");
+    }
+  }
+
+  _deleteFeed() async {
+    try {
+      pr.show();
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        FormData data = FormData.fromMap({"status": "0"});
         AppServices.UpdateFeedStatus(widget._feeds["id"], data).then(
             (data) async {
           pr.hide();
           if (data.data == "0") {
             Fluttertoast.showToast(
-                msg: "Feeds activated",
+                msg: "Feeds deleted",
                 textColor: cnst.appPrimaryMaterialColor[700],
                 backgroundColor: Colors.grey.shade100,
                 gravity: ToastGravity.BOTTOM,
@@ -587,14 +784,14 @@ class _FeedsComponentsState extends State<FeedsComponents> {
           widget._feeds["image"] == "" || widget._feeds["image"] == null
               ? Image.asset(
                   "assets/background.png",
-                  height: 160,
+                  height: 210,
                   width: MediaQuery.of(context).size.width,
                   fit: BoxFit.cover,
                 )
               : FadeInImage.assetNetwork(
                   placeholder: "assets/background.png",
                   image: widget._feeds["image"],
-                  height: 160,
+                  height: 210,
                   width: MediaQuery.of(context).size.width,
                   fit: BoxFit.fill,
                 ),
@@ -609,25 +806,104 @@ class _FeedsComponentsState extends State<FeedsComponents> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("${widget._feeds["name"]}"),
+                      Text(
+                        widget._feeds["shopname"] == null ||
+                                widget._feeds["shopname"] == ""
+                            ? "Shopname"
+                            : widget._feeds["shopname"],
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
                       MaterialButton(
                         elevation: 5.0,
                         height: 40,
                         color: Colors.white,
                         child: Padding(
                           padding: const EdgeInsets.only(left: 20, right: 20),
-                          child: new Text('ACTIVATE',
+                          child: new Text('DELETE',
                               style: new TextStyle(
                                   fontSize: 16.0, color: Colors.black)),
                         ),
                         onPressed: () {
-                          _activateFeed();
+                          _deleteFeed();
                         },
                       ),
                     ],
                   ),
                   SizedBox(height: 10),
                   Text("${widget._feeds["description"]}"),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          widget._feeds["isLike"] == "1"
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: widget._feeds["isLike"] == "1"
+                              ? Colors.red
+                              : Colors.grey,
+                        ),
+                        onPressed: () {
+                          if (widget._feeds["isLike"] == "1") {
+                            removeLike();
+                          } else {
+                            addLike();
+                          }
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.comment),
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      FeedsComments(widget._feeds["id"], () {
+                                        setState(() {
+                                          widget._feeds["total_comments"] =
+                                              int.parse(widget._feeds[
+                                                      "total_comments"]) +
+                                                  1;
+                                        });
+                                      })));
+                        },
+                      )
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 15),
+                    child: Text(
+                      "${widget._feeds["total_likes"]} likes",
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.only(left: 15, top: 5, bottom: 10),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    FeedsComments(widget._feeds["id"], () {
+                                      setState(() {
+                                        widget._feeds["total_comments"] =
+                                            int.parse(widget
+                                                    ._feeds["total_comments"]
+                                                    .toString()) +
+                                                1;
+                                      });
+                                    })));
+                      },
+                      child: Text(
+                        "View All ${widget._feeds["total_comments"]} Comments",
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.normal),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

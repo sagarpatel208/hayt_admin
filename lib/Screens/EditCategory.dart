@@ -11,17 +11,18 @@ import 'package:image_picker/image_picker.dart';
 import 'package:progress_dialog/progress_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class AddCategory extends StatefulWidget {
+class EditCategory extends StatefulWidget {
+  var _category;
+
+  EditCategory(this._category);
+
   @override
-  _AddCategoryState createState() => _AddCategoryState();
+  _EditCategoryState createState() => _EditCategoryState();
 }
 
-class _AddCategoryState extends State<AddCategory> {
+class _EditCategoryState extends State<EditCategory> {
   TextEditingController edtName = new TextEditingController();
 
-  TextEditingController edtDescription = new TextEditingController();
-  String _selectedLanguage = "Select Language";
-  String languageId = "";
   File _image;
   ProgressDialog pr;
   @override
@@ -29,24 +30,31 @@ class _AddCategoryState extends State<AddCategory> {
     pr = ProgressDialog(context,
         type: ProgressDialogType.Normal, isDismissible: false);
     pr.style(message: "Please wait..");
+    _setData();
   }
 
-  addCategory() async {
+  _setData() {
+    edtName.text = widget._category["name"];
+  }
+
+  _updateCategory() async {
     try {
       pr.show();
       final result = await InternetAddress.lookup('google.com');
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
         //pr.show();
         String img = '';
-        List<int> imageBytes = await _image.readAsBytesSync();
-        String base64Image = base64Encode(imageBytes);
-        img = base64Image;
-        print(img);
-
+        List<int> imageBytes;
         String filename = "";
         String filePath = "";
         File compressedFile;
+        String base64Image;
         if (_image != null) {
+          imageBytes = await _image.readAsBytesSync();
+          base64Image = base64Encode(imageBytes);
+          img = base64Image;
+          print(img);
+
           ImageProperties properties =
               await FlutterNativeImage.getImageProperties(_image.path);
           compressedFile = await FlutterNativeImage.compressImage(_image.path,
@@ -60,13 +68,14 @@ class _AddCategoryState extends State<AddCategory> {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String id = prefs.getString(cnst.Session.id);
         FormData d = FormData.fromMap({
-          "name": edtName.text,
-          "img": await MultipartFile.fromFile(filePath, filename: filename),
-          "language_id": languageId
+          "name": edtName.text == "" ? "" : edtName.text,
+          "img": _image == null
+              ? widget._category["image"]
+              : await MultipartFile.fromFile(filePath, filename: filename),
         });
-        print("li: ${languageId}");
 
-        AppServices.AddCategory(d).then((data) async {
+        AppServices.UpdateCategory(widget._category["id"], d).then(
+            (data) async {
           pr.hide();
           if (data.data == "0") {
             Fluttertoast.showToast(
@@ -165,7 +174,7 @@ class _AddCategoryState extends State<AddCategory> {
       child: Scaffold(
         backgroundColor: Colors.grey.shade200,
         appBar: AppBar(
-          title: Text("Add Category"),
+          title: Text("Edit Category"),
           leading: IconButton(
             icon: Icon(
               Icons.arrow_back,
@@ -181,36 +190,6 @@ class _AddCategoryState extends State<AddCategory> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                SizedBox(height: 20),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: DropdownButton<String>(
-                    items: <String>[
-                      'Select Language',
-                      'English',
-                      'Turki',
-                      'Russia'
-                    ].map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                    value: _selectedLanguage,
-                    onChanged: (value) {
-                      setState(() {
-                        if (value == "English") {
-                          languageId = "0";
-                        } else if (value == "Turki") {
-                          languageId = "1";
-                        } else if (value == "Russia") {
-                          languageId = "2";
-                        }
-                        _selectedLanguage = value;
-                      });
-                    },
-                  ),
-                ),
                 SizedBox(height: 20),
                 Container(
                   decoration: BoxDecoration(
@@ -258,18 +237,24 @@ class _AddCategoryState extends State<AddCategory> {
                 Stack(
                   children: [
                     _image == null
-                        ? Container(
-                            height: 200,
-                            color: Colors.grey.shade100,
-                            width: MediaQuery.of(context).size.width,
-                            child: Icon(
-                              Icons.image,
-                              size: 40,
-                            ))
+                        ? widget._category["image"] == "" ||
+                                widget._category["image"] == null
+                            ? Image.asset(
+                                "assets/background.png",
+                                height: 200.0,
+                                width: MediaQuery.of(context).size.width,
+                                fit: BoxFit.cover,
+                              )
+                            : Image.network(
+                                widget._category["image"],
+                                height: 200.0,
+                                width: MediaQuery.of(context).size.width,
+                                fit: BoxFit.fill,
+                              )
                         : Image.file(File(_image.path),
                             height: 200.0,
                             width: MediaQuery.of(context).size.width,
-                            fit: BoxFit.fill),
+                            fit: BoxFit.cover),
                     Positioned(
                       bottom: 0,
                       child: MaterialButton(
@@ -294,33 +279,19 @@ class _AddCategoryState extends State<AddCategory> {
                   height: 50,
                   minWidth: MediaQuery.of(context).size.width,
                   color: cnst.appPrimaryMaterialColor,
-                  child: new Text('ADD CATEGORY',
+                  child: new Text('UPDAE CATEGORY',
                       style:
                           new TextStyle(fontSize: 16.0, color: Colors.white)),
                   onPressed: () {
-                    if (_selectedLanguage == "Select Language") {
-                      Fluttertoast.showToast(
-                          msg: "Please select Language",
-                          textColor: Colors.white,
-                          backgroundColor: cnst.appPrimaryMaterialColor,
-                          gravity: ToastGravity.BOTTOM,
-                          toastLength: Toast.LENGTH_SHORT);
-                    } else if (edtName.text == "") {
+                    if (edtName == "") {
                       Fluttertoast.showToast(
                           msg: "Please enter Category name",
                           textColor: Colors.white,
                           backgroundColor: cnst.appPrimaryMaterialColor,
                           gravity: ToastGravity.BOTTOM,
                           toastLength: Toast.LENGTH_SHORT);
-                    } else if (_image == null) {
-                      Fluttertoast.showToast(
-                          msg: "Please select Image",
-                          textColor: Colors.white,
-                          backgroundColor: cnst.appPrimaryMaterialColor,
-                          gravity: ToastGravity.BOTTOM,
-                          toastLength: Toast.LENGTH_SHORT);
                     } else {
-                      addCategory();
+                      _updateCategory();
                     }
                   },
                 ),
